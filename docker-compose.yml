@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vidora}
+      POSTGRES_USER: ${POSTGRES_USER:-vidora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vidora} -d ${POSTGRES_DB:-vidora}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - downloads:/tmp/vidora
+    init: true
+    # If using a local Telegram Bot API server, set TELEGRAM_LOCAL_API_URL in .env
+    # and add that service/network separately.
+volumes:
+  postgres_data:
+  downloads:
